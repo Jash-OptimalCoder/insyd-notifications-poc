@@ -1,107 +1,174 @@
+/* Basic Reset */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto",
+    sans-serif;
+  background-color: #f5f5f5;
+  color: #333;
+}
+
 .App {
   text-align: center;
+  min-height: 100vh;
 }
 
-.container {
-  display: flex;
-  padding: 20px;
-  gap: 20px;
-}
-
-.control-panel {
-  flex: 1;
-  padding: 20px;
-  border: 1px solid #ccc;
-  border-radius: 8px;
-  background: #f9f9f9;
-}
-
-.control-panel div {
-  margin: 10px 0;
-}
-
-.control-panel label {
-  display: block;
-  margin-bottom: 5px;
-  font-weight: bold;
-}
-
-.control-panel input,
-.control-panel select {
-  padding: 8px;
-  margin-left: 10px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-}
-
-.control-panel button {
-  padding: 10px 20px;
-  background: #007bff;
+header {
+  background-color: #282c34;
   color: white;
+  padding: 1rem;
+  margin-bottom: 2rem;
+}
+header h1 {
+  margin-bottom: 0.5rem;
+}
+header button {
+  padding: 0.5rem 1rem;
+  background: #61dafb;
+  color: #282c34;
   border: none;
   border-radius: 4px;
   cursor: pointer;
+  font-weight: bold;
 }
 
-.control-panel button:hover {
-  background: #0056b3;
+/* Main Layout */
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0 1rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  gap: 2rem;
 }
 
-.notifications-panel {
-  flex: 2;
+@media (min-width: 768px) {
+  .container {
+    flex-direction: row;
+    align-items: flex-start;
+  }
+  .control-panel {
+    flex: 1;
+  }
+  .notifications-panel {
+    flex: 2;
+  }
 }
 
-.notifications-list {
-  max-height: 600px;
-  overflow-y: auto;
-}
-
-.notification {
-  padding: 15px;
-  margin: 10px 0;
-  border-left: 4px solid #007bff;
+/* Control Panel Styles */
+.control-panel {
   background: white;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  padding: 1.5rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  width: 100%;
+}
+
+.control-panel h2 {
+  margin-bottom: 1rem;
+  color: #444;
+}
+
+.form-group {
+  margin-bottom: 1rem;
   text-align: left;
 }
 
-.notification.info {
-  border-left-color: #17a2b8;
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: bold;
 }
 
-.notification.alert {
+.form-group select,
+.form-group input {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 1rem;
+}
+
+.control-panel button {
+  width: 100%;
+  padding: 0.75rem;
+  background-color: #4caf50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 1rem;
+  cursor: pointer;
+  margin-top: 0.5rem;
+}
+.control-panel button:hover {
+  background-color: #45a049;
+}
+
+/* Notifications Panel Styles */
+.notifications-panel {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  width: 100%;
+}
+
+.notifications-panel h2 {
+  margin-bottom: 1rem;
+  color: #444;
+}
+
+.notifications-list {
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+/* Notification Item Styles */
+.notification {
+  border-left: 5px solid #ccc;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  text-align: left;
+  background: #fafafa;
+  border-radius: 4px;
+}
+.notification.like {
+  border-left-color: #ff5252;
+}
+.notification.comment {
+  border-left-color: #448aff;
+}
+.notification.follow {
   border-left-color: #ffc107;
 }
-
 .notification.message {
-  border-left-color: #28a745;
+  border-left-color: #4caf50;
+}
+.notification.job {
+  border-left-color: #9c27b0;
 }
 
-.notification.like {
-  border-left-color: #dc3545;
+.notification-content .message {
+  font-weight: 500;
+  margin-bottom: 0.5rem;
 }
 
-.notification.comment {
-  border-left-color: #6f42c1;
-}
-
-.notification.follow {
-  border-left-color: #fd7e14;
-}
-
-.notification-message {
-  font-weight: bold;
-  margin-bottom: 5px;
-}
-
-.notification-meta {
+.notification-content .meta {
   display: flex;
   justify-content: space-between;
+  font-size: 0.85rem;
   color: #666;
-  font-size: 0.9em;
 }
 
-.notification-type {
+.type-badge {
   text-transform: capitalize;
   font-weight: bold;
+}
+.timestamp {
+  font-style: italic;
 }
