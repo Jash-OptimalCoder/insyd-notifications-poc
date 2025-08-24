@@ -1,62 +1,76 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import io from "socket.io-client";
 import "./App.css";
 
-const API_BASE = "http://localhost:5000";
+// Configuration
+const API_BASE = "http://localhost:5000"; // Your backend URL
 
 function App() {
   const [notifications, setNotifications] = useState([]);
   const [socket, setSocket] = useState(null);
-  const [userId, setUserId] = useState(1); // Default user for POC
-  const [message, setMessage] = useState("");
-  const [type, setType] = useState("info");
+  const [currentUser, setCurrentUser] = useState(1); // Default user ID for testing
+  const [newMessage, setNewMessage] = useState("");
+  const [newType, setNewType] = useState("like");
 
+  // Use ref to hold the latest state inside Socket.io callbacks
+  const notificationsRef = useRef();
+  notificationsRef.current = notifications;
+
+  // Initialize Socket.io connection and fetch existing notifications
   useEffect(() => {
-    // Initialize socket connection
+    // Establish Socket.io connection
     const newSocket = io(API_BASE);
     setSocket(newSocket);
 
-    // Join user room
-    newSocket.emit("join", userId);
+    // Fetch existing notifications for the current user
+    const fetchNotifications = async () => {
+      try {
+        const response = await axios.get(
+          `${API_BASE}/api/notifications/${currentUser}`
+        );
+        setNotifications(response.data.notifications || []);
+      } catch (error) {
+        console.error("Error fetching notifications:", error);
+      }
+    };
+    fetchNotifications();
 
-    // Listen for notifications
-    newSocket.on(`notification:${userId}`, (notification) => {
-      setNotifications((prev) => [notification, ...prev]);
+    // Listen for new notifications from the server
+    newSocket.on("new-notification", (notification) => {
+      console.log("Received new notification:", notification);
+      // Use the ref to access the latest state and avoid stale closures
+      setNotifications((prevNotes) => [notification, ...prevNotes]);
     });
 
-    // Cleanup on unmount
-    return () => newSocket.close();
-  }, [userId]);
+    // Cleanup on component unmount
+    return () => {
+      newSocket.close();
+    };
+  }, [currentUser]); // Re-run if currentUser changes
 
+  // Tell the server to join the room for the current user whenever it changes
   useEffect(() => {
-    // Load existing notifications
-    fetchNotifications();
-  }, [userId]);
-
-  const fetchNotifications = async () => {
-    try {
-      const response = await axios.get(
-        `${API_BASE}/api/notifications/${userId}`
-      );
-      setNotifications(response.data.notifications);
-    } catch (error) {
-      console.error("Error fetching notifications:", error);
+    if (socket) {
+      console.log(`Joining room for user: ${currentUser}`);
+      socket.emit("join", currentUser);
     }
-  };
+  }, [socket, currentUser]);
 
-  const createNotification = async () => {
-    if (!message) return;
+  const handleSendNotification = async (e) => {
+    e.preventDefault();
+    if (!newMessage.trim()) return;
 
     try {
       await axios.post(`${API_BASE}/api/notifications`, {
-        userId,
-        type,
-        message,
+        userId: currentUser,
+        type: newType,
+        message: newMessage,
       });
-      setMessage("");
+      setNewMessage(""); // Clear input on success
     } catch (error) {
-      console.error("Error creating notification:", error);
+      console.error("Error sending notification:", error);
+      alert("Failed to send notification. Is the backend running?");
     }
   };
 
@@ -66,70 +80,69 @@ function App() {
 
   return (
     <div className="App">
-      <header className="App-header">
-        <h1>Insyd Notifications</h1>
+      <header>
+        <h1>Insyd Notifications PoC</h1>
+        <p>User ID: {currentUser}</p>
+        <button onClick={() => setCurrentUser((prev) => (prev === 1 ? 2 : 1))}>
+          Switch User ({currentUser === 1 ? "Show User 2" : "Show User 1"})
+        </button>
       </header>
 
       <div className="container">
+        {/* Control Panel to Send Notifications */}
         <div className="control-panel">
-          <h2>Send Notification</h2>
-          <div>
-            <label>
-              User ID:
-              <input
-                type="number"
-                value={userId}
-                onChange={(e) => setUserId(parseInt(e.target.value) || 1)}
-                min="1"
-              />
-            </label>
-          </div>
-          <div>
-            <label>
-              Type:
-              <select value={type} onChange={(e) => setType(e.target.value)}>
-                <option value="info">Info</option>
-                <option value="alert">Alert</option>
-                <option value="message">Message</option>
-                <option value="like">Like</option>
-                <option value="comment">Comment</option>
-                <option value="follow">Follow</option>
+          <h2>Simulate an Activity</h2>
+          <form onSubmit={handleSendNotification}>
+            <div className="form-group">
+              <label>Type:</label>
+              <select
+                value={newType}
+                onChange={(e) => setNewType(e.target.value)}
+              >
+                <option value="like">👍 Like</option>
+                <option value="comment">💬 Comment</option>
+                <option value="follow">👤 Follow</option>
+                <option value="message">✉️ Message</option>
+                <option value="job">💼 Job</option>
               </select>
-            </label>
-          </div>
-          <div>
-            <label>
-              Message:
+            </div>
+            <div className="form-group">
+              <label>Message:</label>
               <input
                 type="text"
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                placeholder="Enter notification message"
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+                placeholder="E.g., 'Jashwanth Sai liked your post'"
               />
-            </label>
-          </div>
-          <button onClick={createNotification}>Send Notification</button>
+            </div>
+            <button type="submit">Send Notification</button>
+          </form>
         </div>
 
+        {/* Display Notifications */}
         <div className="notifications-panel">
-          <h2>Notifications for User {userId}</h2>
+          <h2>Notifications for User {currentUser}</h2>
           <div className="notifications-list">
-            {notifications.map((notification) => (
-              <div
-                key={notification.id}
-                className={`notification ${notification.type}`}
-              >
-                <div className="notification-message">
-                  {notification.message}
+            {notifications.length === 0 ? (
+              <p>No notifications yet.</p>
+            ) : (
+              notifications.map((notification) => (
+                <div
+                  key={notification.id}
+                  className={`notification ${notification.type}`}
+                >
+                  <div className="notification-content">
+                    <p className="message">{notification.message}</p>
+                    <div className="meta">
+                      <span className="type-badge">{notification.type}</span>
+                      <span className="timestamp">
+                        {formatDate(notification.created_at)}
+                      </span>
+                    </div>
+                  </div>
                 </div>
-                <div className="notification-meta">
-                  <span className="notification-type">{notification.type}</span>
-                  <span className="notification-time">
-                    {formatDate(notification.created_at)}
-                  </span>
-                </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </div>
       </div>
